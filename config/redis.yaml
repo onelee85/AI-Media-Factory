@@ -1,0 +1,6 @@
+# Redis Configuration
+
+host: "139.224.189.47"
+port: 6379
+password: "${REDIS_PASSWORD}"
+db: 4
