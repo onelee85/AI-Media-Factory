@@ -1,0 +1,29 @@
+# Model Provider Configuration
+# Primary and fallback providers for LLM calls
+
+providers:
+  # Primary provider (LM Studio local inference)
+  primary:
+    provider: "lm_studio"
+    model: "lmstudio-community/Mistral-Nemo-Instruct-2407-GGUF"
+    base_url: "http://localhost:1234/v1"
+    api_key: "not-needed"  # LM Studio doesn't require an API key
+    timeout: 120
+
+  # Fallback provider (OpenAI cloud)
+  fallback:
+    provider: "openai"
+    model: "gpt-4o-mini"
+    base_url: "https://api.openai.com/v1"
+    api_key: "${OPENAI_API_KEY}"  # Resolved from environment variable at runtime
+    timeout: 60
+
+# Default provider to use when none is specified
+default_provider: "primary"
+
+# List of supported provider identifiers
+supported_providers:
+  - "lm_studio"
+  - "openai"
+  - "anthropic"
+  - "azure_openai"
