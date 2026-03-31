@@ -76,8 +76,8 @@ async def _generate_script_async(
             script.model = generation_result.get("model", "")
             script.status = "completed"
             script.completed_at = datetime.now(timezone.utc)
-            script.metadata = {
-                **(script.metadata or {}),
+            script.script_metadata = {
+                **(script.script_metadata or {}),
                 "sections": generation_result.get("sections", []),
                 "summary": generation_result.get("summary", ""),
                 "usage": generation_result.get("usage", {}),

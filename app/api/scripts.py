@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,7 +35,7 @@ class ScriptResponse(BaseModel):
     provider: str | None
     model: str | None
     status: str
-    metadata: dict | None
+    script_metadata: dict | None
     error: str | None
     created_at: datetime
     updated_at: datetime
@@ -59,7 +59,7 @@ async def create_script(
         prompt=body.prompt,
         provider=body.provider,
         status="pending",
-        metadata={"temperature": body.temperature, "max_tokens": body.max_tokens},
+        script_metadata={"temperature": body.temperature, "max_tokens": body.max_tokens},
     )
     db.add(script)
     await db.flush()
@@ -98,8 +98,8 @@ async def get_script(
 async def list_scripts(
     project_id: uuid.UUID | None = None,
     status: str | None = None,
-    limit: int = Field(default=50, ge=1, le=200),
-    offset: int = Field(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
     """List scripts, optionally filtered by project or status."""
