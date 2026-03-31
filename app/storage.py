@@ -31,6 +31,11 @@ class StorageService:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def video_props_dir(self, job_id: str) -> Path:
+        path = self.root / "temp" / "props" / str(job_id)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def temp_dir(self, job_id: str) -> Path:
         path = self.root / "temp" / str(job_id)
         path.mkdir(parents=True, exist_ok=True)
