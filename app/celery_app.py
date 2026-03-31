@@ -15,6 +15,7 @@ celery_app.config_from_object({
         "app.tasks.media.*": {"queue": "media"},
         "app.tasks.render.*": {"queue": "render"},
         "app.tasks.compose.*": {"queue": "compose"},
+        "app.tasks.scripts.*": {"queue": "scripts"},
     },
     "task_time_limit": 600,
     "task_soft_time_limit": 540,

@@ -146,7 +146,7 @@ class Settings(BaseSettings):
     storage_root: Path = Path("./storage")
     ffmpeg_binary: str = "ffmpeg"
     ffprobe_binary: str = "ffprobe"
-    celery_queues: tuple = ("tts", "media", "render", "compose")
+    celery_queues: tuple = ("tts", "media", "render", "compose", "scripts")
     open_api_base: str = ""
     open_api_key: str = ""
 
