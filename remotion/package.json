@@ -1,0 +1,24 @@
+{
+  "name": "ai-media-factory-remotion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "render": "npx tsx src/render.mjs",
+    "preview": "npx remotion studio src/index.ts"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@remotion/cli": "latest",
+    "@remotion/renderer": "latest",
+    "@remotion/bundler": "latest",
+    "@remotion/player": "latest",
+    "@remotion/media": "latest",
+    "mediabunny": "latest"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/react": "^19.0.0",
+    "tsx": "^4.7.0"
+  }
+}
