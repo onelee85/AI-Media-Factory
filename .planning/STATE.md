@@ -8,16 +8,16 @@
 
 ## Current Position
 
-- **Phase**: 4 (complete)
-- **Plan**: 04-02 (all plans done)
-- **Status**: Phase 4 complete — TTS service + voice registry ready
-- **Progress**: ██████████░░░░░░░░░░░ 4/9 phases
+- **Phase**: 6 (planned)
+- **Plan**: 06-01 (ready to execute)
+- **Status**: Phase 6 plans created — Remotion project scaffold, render pipeline, preview player, Python integration
+- **Progress**: ████████████████░░░░ 6/9 phases (5 complete, 1 planned)
 
 ## Performance Metrics
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Phases completed | 9 | 4 |
+| Phases completed | 9 | 5 |
 | Requirements mapped | 16/16 | 16/16 |
 | Video generation time | <5 min | — |
 | Script quality | >80% usable | — |
@@ -49,12 +49,13 @@
 - [x] Execute Phase 2 — all 5 plans ✓
 - [x] Execute Phase 3 — all 2 plans ✓
 - [x] Execute Phase 4 — all 2 plans ✓
+- [x] Execute Phase 5 — all 3 plans ✓
 
 ## Session Continuity
 
-**Last session**: Phase 4 execution complete (2026-03-31)
-**Next action**: `/gsd-plan-phase 5` — Plan Phase 5: Subtitles & Timing
-**Context**: Phase 4 fully committed. edge-tts + srt deps installed. AudioFile model + VoiceManagerService + TTSService all wired up. Ready for subtitle generation from word timing data.
+**Last session**: Phase 6 planning complete (2026-03-31)
+**Next action**: `/gsd-execute-phase 6` — Execute Phase 6: Remotion Video Composition & Export
+**Context**: Phase 6 has 4 plans across 3 waves. Plan 01 (Remotion scaffold + VideoComposition) is Wave 1 root. Plans 02+03 depend on 01. Plan 04 depends on 02. All subtitle/audio infrastructure from Phase 5 ready as inputs.
 
 ---
 
