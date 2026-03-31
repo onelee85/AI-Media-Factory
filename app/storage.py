@@ -16,6 +16,11 @@ class StorageService:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def subtitle_dir(self, project_id: str = "default") -> Path:
+        path = self.root / "assets" / "subtitles" / str(project_id)
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     def image_dir(self) -> Path:
         path = self.root / "assets" / "images"
         path.mkdir(parents=True, exist_ok=True)
