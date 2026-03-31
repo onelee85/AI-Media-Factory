@@ -8,10 +8,10 @@
 
 ## Current Position
 
-- **Phase**: 6 (planned)
-- **Plan**: 06-01 (ready to execute)
-- **Status**: Phase 6 plans created — Remotion project scaffold, render pipeline, preview player, Python integration
-- **Progress**: ████████████████░░░░ 6/9 phases (5 complete, 1 planned)
+- **Phase**: 6 (complete)
+- **Plan**: 06-04 (all plans executed)
+- **Status**: Phase 6 complete — Remotion project scaffolded, SSR render pipeline, preview player, Python integration via ComposeService + Celery
+- **Progress**: ██████████████████░░ 7/9 phases (6 complete, 1 ready)
 
 ## Performance Metrics
 
@@ -50,13 +50,14 @@
 - [x] Execute Phase 3 — all 2 plans ✓
 - [x] Execute Phase 4 — all 2 plans ✓
 - [x] Execute Phase 5 — all 3 plans ✓
+- [x] Execute Phase 6 — all 4 plans ✓
 
 ## Session Continuity
 
-**Last session**: Phase 6 planning complete (2026-03-31)
-**Next action**: `/gsd-execute-phase 6` — Execute Phase 6: Remotion Video Composition & Export
-**Context**: Phase 6 has 4 plans across 3 waves. Plan 01 (Remotion scaffold + VideoComposition) is Wave 1 root. Plans 02+03 depend on 01. Plan 04 depends on 02. All subtitle/audio infrastructure from Phase 5 ready as inputs.
+**Last session**: Phase 6 execution complete (2026-03-31)
+**Next action**: `/gsd-execute-phase 7` — Execute Phase 7
+**Context**: Phase 6 delivered: Remotion scaffold, VideoComposition with audio/subtitles/background layers, SRT parser, SSR render.mjs script, preview player with FastAPI endpoint, Video model, ComposeService, and Celery compose_video_task. Full pipeline from Python backend → Node.js Remotion render → MP4 output is now wired.
 
 ---
 
-*Updated: 2026-03-30 after Phase 1 execution*
+*Updated: 2026-03-31 after Phase 6 execution*
