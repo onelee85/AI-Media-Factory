@@ -73,6 +73,11 @@
     // --- State ---
     let currentVideoId = null;
     let pollingInterval = null;
+    let pollFailureCount = 0;
+    let elapsedTimer = null;
+    let generationStartTime = null;
+    const MAX_POLL_RETRIES = 3;
+    const POLL_TIMEOUT_MS = 300000; // 5 minutes
 
     // --- Stage labels ---
     const STAGE_LABELS = {
@@ -85,7 +90,19 @@
         failed: "Pipeline failed",
     };
 
+    const STAGE_LABELS_CN = {
+        script: "脚本生成",
+        audio: "语音合成",
+        subtitles: "字幕生成",
+        media: "素材匹配",
+        compose: "视频合成",
+        completed: "已完成",
+        failed: "生成失败",
+    };
+
     const STAGE_ORDER = ["script", "audio", "subtitles", "media", "compose"];
+
+    let _currentStage = "script";
 
     // --- Character counter + input tracking ---
     $prompt.addEventListener("input", function () {
@@ -141,7 +158,7 @@
             // Scroll to progress
             $progressSection.scrollIntoView({ behavior: "smooth", block: "start" });
         } catch (err) {
-            showError(err.message || "Failed to submit request.");
+            showError(err.message || "无法连接服务器，请检查网络后重试");
             setLoading(false);
         }
     });
@@ -149,12 +166,25 @@
     // --- Polling ---
     function startPolling(videoId) {
         stopPolling(); // Clear any existing interval
+        pollFailureCount = 0;
+        generationStartTime = Date.now();
+
+        // Start elapsed time timer
+        elapsedTimer = setInterval(updateElapsedTime, 1000);
 
         pollingInterval = setInterval(async () => {
+            // Check timeout
+            if (Date.now() - generationStartTime > POLL_TIMEOUT_MS) {
+                stopPolling();
+                showTimeoutOptions();
+                return;
+            }
+
             try {
                 const response = await fetch(`/api/videos/${videoId}/status`);
                 if (!response.ok) throw new Error("Status request failed");
 
+                pollFailureCount = 0; // Reset on success
                 const data = await response.json();
                 updateProgress(data.stage, data.error);
                 flowTracker.mark("progress");
@@ -165,12 +195,17 @@
                     setLoading(false);
                 } else if (data.stage === "failed") {
                     stopPolling();
-                    showProgressError(data.error || "Pipeline failed");
+                    showPipelineError(data.error || "Pipeline failed");
                     setLoading(false);
                 }
             } catch (err) {
-                // Silently retry — network blips are common
-                console.warn("Poll error:", err.message);
+                pollFailureCount++;
+                console.warn(`Poll error (${pollFailureCount}/${MAX_POLL_RETRIES}):`, err.message);
+
+                if (pollFailureCount >= MAX_POLL_RETRIES) {
+                    stopPolling();
+                    showConnectionLost();
+                }
             }
         }, 2000);
     }
@@ -180,10 +215,96 @@
             clearInterval(pollingInterval);
             pollingInterval = null;
         }
+        if (elapsedTimer) {
+            clearInterval(elapsedTimer);
+            elapsedTimer = null;
+        }
+    }
+
+    function updateElapsedTime() {
+        if (!generationStartTime) return;
+        const elapsed = Math.floor((Date.now() - generationStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+        $stageLabel.textContent = `${STAGE_LABELS[_currentStage] || "Processing..."} (已用时间: ${timeStr})`;
+    }
+
+    function showConnectionLost() {
+        const errorDiv = $progressError;
+        errorDiv.innerHTML = "连接中断 — 网络请求失败3次";
+        const retryBtn = document.createElement("button");
+        retryBtn.textContent = "重新连接";
+        retryBtn.className = "btn btn-primary";
+        retryBtn.style.marginTop = "0.5rem";
+        retryBtn.addEventListener("click", function () {
+            errorDiv.hidden = true;
+            if (currentVideoId) startPolling(currentVideoId);
+        });
+        errorDiv.appendChild(retryBtn);
+        errorDiv.hidden = false;
+        setLoading(false);
+    }
+
+    function showPipelineError(errorMsg) {
+        const errorDiv = $progressError;
+        errorDiv.innerHTML = `生成失败: ${errorMsg}`;
+        const retryBtn = document.createElement("button");
+        retryBtn.textContent = "重新生成";
+        retryBtn.className = "btn btn-primary";
+        retryBtn.style.marginTop = "0.5rem";
+        retryBtn.addEventListener("click", resetForm);
+        errorDiv.appendChild(retryBtn);
+        errorDiv.hidden = false;
+    }
+
+    function showTimeoutOptions() {
+        const errorDiv = $progressError;
+        errorDiv.innerHTML = "生成超时 — 已超过5分钟";
+        const btnContainer = document.createElement("div");
+        btnContainer.style.cssText = "display:flex;gap:0.5rem;margin-top:0.5rem;";
+
+        const waitBtn = document.createElement("button");
+        waitBtn.textContent = "继续等待";
+        waitBtn.className = "btn btn-primary";
+        waitBtn.addEventListener("click", function () {
+            errorDiv.hidden = true;
+            generationStartTime = Date.now(); // Reset timeout
+            if (currentVideoId) startPolling(currentVideoId);
+        });
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.textContent = "取消";
+        cancelBtn.className = "btn btn-success";
+        cancelBtn.addEventListener("click", resetForm);
+
+        btnContainer.appendChild(waitBtn);
+        btnContainer.appendChild(cancelBtn);
+        errorDiv.appendChild(btnContainer);
+        errorDiv.hidden = false;
+        setLoading(false);
+    }
+
+    function resetForm() {
+        stopPolling();
+        currentVideoId = null;
+        generationStartTime = null;
+        pollFailureCount = 0;
+        _currentStage = "script";
+        setLoading(false);
+        $progressSection.hidden = true;
+        $previewSection.hidden = true;
+        $downloadSection.hidden = true;
+        $progressError.hidden = true;
+        $prompt.value = "";
+        $charCount.textContent = "0";
+        resetStepper();
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     // --- Progress UI ---
     function updateProgress(stage, error) {
+        _currentStage = stage;
         const steps = document.querySelectorAll(".step");
         const lines = document.querySelectorAll(".step-line");
 
@@ -206,6 +327,13 @@
                     step.classList.add("active");
                 }
             }
+
+            // Update step labels with Chinese checkmarks
+            const labelEl = step.querySelector(".step-label");
+            if (labelEl && STAGE_LABELS_CN[stepStage]) {
+                const isCompleted = step.classList.contains("completed");
+                labelEl.textContent = (isCompleted ? "✓ " : "") + STAGE_LABELS_CN[stepStage];
+            }
         });
 
         // Update lines
@@ -220,6 +348,7 @@
         });
 
         // Update label
+        const cnLabel = STAGE_LABELS_CN[stage] || stage;
         $stageLabel.textContent = STAGE_LABELS[stage] || stage;
     }
 
@@ -268,6 +397,17 @@
             $downloadBtn.addEventListener("click", function () {
                 flowTracker.mark("download");
             });
+
+            // Add "Generate New Video" button if not exists
+            if (!document.getElementById("new-video-btn")) {
+                const newBtn = document.createElement("button");
+                newBtn.id = "new-video-btn";
+                newBtn.className = "btn btn-primary";
+                newBtn.textContent = "生成新视频";
+                newBtn.style.marginTop = "0.75rem";
+                newBtn.addEventListener("click", resetForm);
+                $downloadSection.appendChild(newBtn);
+            }
 
             // Scroll to preview
             $previewSection.scrollIntoView({ behavior: "smooth", block: "start" });

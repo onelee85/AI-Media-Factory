@@ -358,3 +358,60 @@ select {
 .step.active .step-icon {
     animation: pulse 2s ease-in-out infinite;
 }
+
+/* Elapsed time display */
+.elapsed-time {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 0.25rem;
+}
+
+/* Smooth progress transitions */
+.step-line {
+    transition: background 0.5s ease;
+}
+
+.step-icon {
+    transition: all 0.3s ease;
+}
+
+/* Fade-in for completed checkmarks */
+.step.completed .step-icon::after {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Error shake animation */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+}
+
+.error-message:not([hidden]) {
+    animation: shake 0.3s ease;
+}
+
+/* Enhanced download button */
+.btn-success {
+    font-size: 1.1rem;
+    padding: 0.9rem 2rem;
+    box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+}
+
+.btn-success:hover:not(:disabled) {
+    box-shadow: 0 6px 16px rgba(0, 184, 148, 0.4);
+}
+
+/* Disabled button state */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
