@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Media Factory — 一键出片</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">AI Media Factory</h1>
+            <p class="subtitle">一键出片 — One-Click Video Generation</p>
+        </header>
+
+        <!-- Input Section -->
+        <section id="input-section" class="section input-section">
+            <div class="form-group">
+                <label for="prompt">Video Topic / Prompt</label>
+                <textarea
+                    id="prompt"
+                    placeholder="Enter your video topic... (e.g., 'How AI is transforming education')"
+                    maxlength="4000"
+                    rows="4"
+                    required
+                ></textarea>
+                <div class="char-count"><span id="char-count">0</span> / 4000</div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="title">Title (optional)</label>
+                    <input type="text" id="title" placeholder="Video title" maxlength="300">
+                </div>
+
+                <div class="form-group">
+                    <label for="voice">Voice</label>
+                    <select id="voice">
+                        <option value="zh-CN-YunxiNeural" selected>中文 — Yunxi (男)</option>
+                        <option value="zh-CN-XiaoxiaoNeural">中文 — Xiaoxiao (女)</option>
+                        <option value="en-US-JennyNeural">English — Jenny</option>
+                    </select>
+                </div>
+            </div>
+
+            <button id="generate-btn" class="btn btn-primary" type="button">
+                <span class="btn-text">Generate Video</span>
+                <span class="btn-spinner" hidden></span>
+            </button>
+
+            <div id="error-message" class="error-message" hidden></div>
+        </section>
+
+        <!-- Progress Section -->
+        <section id="progress-section" class="section progress-section" hidden>
+            <h2>Pipeline Progress</h2>
+            <div class="stepper">
+                <div class="step" data-stage="script">
+                    <div class="step-icon">1</div>
+                    <div class="step-label">Script</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-stage="audio">
+                    <div class="step-icon">2</div>
+                    <div class="step-label">Voice</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-stage="subtitles">
+                    <div class="step-icon">3</div>
+                    <div class="step-label">Subtitles</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-stage="media">
+                    <div class="step-icon">4</div>
+                    <div class="step-label">Media</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-stage="compose">
+                    <div class="step-icon">5</div>
+                    <div class="step-label">Render</div>
+                </div>
+            </div>
+            <p id="stage-label" class="stage-label">Initializing...</p>
+            <div id="progress-error" class="error-message" hidden></div>
+        </section>
+
+        <!-- Preview Section -->
+        <section id="preview-section" class="section preview-section" hidden>
+            <h2>Video Preview</h2>
+            <div class="video-container">
+                <video id="video-player" controls preload="metadata">
+                    Your browser does not support the video element.
+                </video>
+            </div>
+            <div class="video-info">
+                <span id="video-title" class="video-title"></span>
+                <span id="video-size" class="video-size"></span>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="download-section" class="section download-section" hidden>
+            <a id="download-btn" class="btn btn-success" download>
+                Download MP4
+            </a>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
