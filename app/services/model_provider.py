@@ -43,6 +43,10 @@ class ModelProviderService:
             "base_url": provider_config.base_url,
             "timeout": provider_config.timeout,
         }
+        if provider_config.provider == "openai":
+            kwargs["custom_llm_provider"] = "openai"
+        elif provider_config.provider == "lm_studio":
+            kwargs["custom_llm_provider"] = "lm_studio"
         if provider_config.api_key:
             kwargs["api_key"] = provider_config.api_key
         return kwargs
@@ -97,8 +101,23 @@ class ModelProviderService:
                         **kwargs,
                     )
 
+                    content = response.choices[0].message.content
+                    
+                    # Handle cases where content is None but reasoning exists
+                    if content is None and hasattr(response.choices[0].message, 'reasoning_content'):
+                        content = response.choices[0].message.reasoning_content
+                    if content is None:
+                        logger.warning(f"LLM content is still None. response: {response}")
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"litellm response: model={response.model}, content={repr(content)[:100]}")
+                    
+                    if content is None:
+                        logger.warning(f"LLM returned None content, full response: {response}")
+                        continue
+
                     return {
-                        "content": response.choices[0].message.content,
+                        "content": content,
                         "usage": response.usage.model_dump() if response.usage else {},
                         "model": response.model,
                         "provider": provider_name,
@@ -106,6 +125,9 @@ class ModelProviderService:
 
                 except Exception as e:
                     last_error = e
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"LLM call failed: {e}")
                     continue
 
         raise ModelProviderError(f"All providers failed. Last error: {last_error}")

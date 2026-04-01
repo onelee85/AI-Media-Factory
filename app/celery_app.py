@@ -16,9 +16,10 @@ celery_app.config_from_object({
         "app.tasks.render.*": {"queue": "render"},
         "app.tasks.compose.*": {"queue": "compose"},
         "app.tasks.scripts.*": {"queue": "scripts"},
-        "app.tasks.pipeline.*": {"queue": "scripts"},
+        "app.tasks.pipeline.generate_video": {"queue": "scripts"},
     },
-    "task_time_limit": 600,
-    "task_soft_time_limit": 540,
+    "task_time_limit": 1800,
+    "task_soft_time_limit": 1500,
+    "queues": ["celery", "scripts", "tts", "media", "render", "compose"],
 })
 celery_app.autodiscover_tasks(["app.tasks"])

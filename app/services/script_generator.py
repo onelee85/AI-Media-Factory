@@ -4,25 +4,9 @@ from typing import Optional, Dict, Any
 from app.services.model_provider import model_provider_service, ModelProviderError
 
 
-SYSTEM_PROMPT = """You are an expert video script writer. Given a topic or brief, produce a structured script
-with clear sections. Output valid JSON with this schema:
-{
-  "title": "Script title",
-  "sections": [
-    {"heading": "Section name", "content": "Narration text for voice-over, minimum 50 characters per section", "duration_estimate_sec": 30}
-  ],
-  "summary": "One-sentence summary of the script"
-}
-
-Quality requirements:
-- Generate 3-5 sections per script
-- Each section's content must be at least 50 characters of natural narration text
-- Content should flow as spoken narration, not bullet points or lists
-- Duration estimates should reflect realistic speaking pace (~150 words/minute for Chinese, ~130 for English)
-- Title should be concise and descriptive (5-15 words)
-- Summary should capture the video's core message in one sentence
-
-Only output the JSON object, no extra text."""
+SYSTEM_PROMPT = """Write a video script in JSON format:
+{"title": "title", "sections": [{"heading": "name", "content": "text min 30 chars", "duration_estimate_sec": 3}], "summary": "one sentence"}
+Each section content must be at least 30 characters. Generate 2 sections. Only output JSON."""
 
 
 class ScriptGeneratorService:
@@ -31,7 +15,7 @@ class ScriptGeneratorService:
     Wraps ModelProviderService with script-specific prompts and parsing.
     """
 
-    MIN_CONTENT_LENGTH = 50  # Minimum characters per section for quality narration
+    MIN_CONTENT_LENGTH = 30  # Minimum characters per section for quality narration
 
     def __init__(self):
         self.provider = model_provider_service
@@ -82,7 +66,20 @@ class ScriptGeneratorService:
             fallback_chain=fallback_chain,
         )
 
-        parsed = self._parse_script(result["content"])
+        content = result.get("content", "")
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"LLM result keys: {list(result.keys())}")
+        logger.info(f"LLM content type: {type(content)}, len: {len(content) if content else 0}")
+        
+        if not content:
+            logger.error("LLM content is empty!")
+            raise ValueError("LLM returned empty response")
+        
+        logger.info(f"LLM raw response: {content[:500]}")
+
+        parsed = self._parse_script(content)
 
         return {
             **parsed,
@@ -107,6 +104,14 @@ class ScriptGeneratorService:
         Parse LLM output into a structured script dict.
         Attempts JSON parsing first; falls back to wrapping raw text.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"_parse_script called with raw type: {type(raw)}, len: {len(raw) if raw else 0}")
+        
+        if not raw:
+            logger.error("_parse_script: raw is empty!")
+            raise ValueError("LLM returned empty response")
         raw = raw.strip()
 
         # Strip markdown code fences if present
@@ -122,8 +127,8 @@ class ScriptGeneratorService:
                 raise ValueError("Script JSON must be an object")
             if "sections" not in data or not isinstance(data.get("sections"), list):
                 raise ValueError("Script JSON must contain a 'sections' array")
-            if len(data["sections"]) < 2:
-                raise ValueError("Script must have at least 2 sections")
+            if len(data["sections"]) < 1:
+                raise ValueError("Script must have at least 1 section")
 
             # Validate section content quality
             for i, section in enumerate(data["sections"]):

@@ -1,14 +1,39 @@
+import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pathlib import Path
+from sqlalchemy import text
 
 from app.config import settings
 from app.api.health import health_router
 from app.api.scripts import scripts_router
 from app.api.preview import preview_router
 from app.api.videos import videos_router
+from app.db import Base, engine
 
-app = FastAPI(title=settings.app_name, debug=settings.debug)
+
+async def init_database():
+    """Initialize database tables if they don't exist."""
+    async with engine.begin() as conn:
+        try:
+            await conn.execute(text("SELECT 1 FROM projects LIMIT 1"))
+            print("Database tables already exist.")
+        except Exception:
+            print("Creating database tables...")
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("Database tables created!")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database on startup."""
+    await init_database()
+    yield
+
+
+app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan)
 
 app.include_router(health_router)
 app.include_router(scripts_router)

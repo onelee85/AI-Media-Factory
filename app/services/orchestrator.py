@@ -118,6 +118,7 @@ class OrchestratorService:
             video.celery_task_id = celery_result.id
             video.status = "queued"
             await session.flush()
+            await session.commit()
 
             return {
                 "video_id": video_id,

@@ -61,7 +61,7 @@ async function main() {
 
   console.log(`Bundling Remotion project...`);
   const bundleLocation = await bundle({
-    entryPoint: path.resolve(projectRoot, 'src/index.ts'),
+    entryPoint: path.resolve(projectRoot, 'remotion/src/index.ts'),
     webpackOverride: (config) => config,
   });
   console.log(`Bundle ready: ${bundleLocation}`);

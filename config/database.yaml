@@ -1,6 +1,6 @@
-# Database Configuration
+# Database Configuration (remote)
 
-host: "localhost"
+host: "101.133.133.82"
 port: 5432
 user: "postgres"
 password: "${DB_PASSWORD}"

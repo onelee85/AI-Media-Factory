@@ -143,11 +143,19 @@ async def _resolve_stage(db: AsyncSession, video: Video) -> str:
     if script_media and script_media.status in ("pending", "matching"):
         return "media"
 
-    # If video is rendering
+    # If video is completed
+    if video.status == "completed":
+        return "completed"
+    
+    # If video failed
+    if video.status == "failed":
+        return "failed"
+
+    # If video is rendering or running
     if video.status in ("rendering", "running"):
         return "compose"
 
-    return "compose"
+    return "script"
 
 
 # --- Endpoints ---

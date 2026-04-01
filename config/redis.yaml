@@ -1,4 +1,4 @@
-# Redis Configuration
+# Redis Configuration (remote)
 
 host: "139.224.189.47"
 port: 6379

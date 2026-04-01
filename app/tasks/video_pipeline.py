@@ -48,7 +48,7 @@ def _update_stage_sync(video_id: str, stage: str, session):
         video.render_props = props
 
 
-@celery_app.task(bind=True, name="app.tasks.pipeline.generate_video", acks_late=True, time_limit=300, soft_time_limit=280)
+@celery_app.task(bind=True, name="app.tasks.pipeline.generate_video", acks_late=True, time_limit=1800, soft_time_limit=1500)
 def generate_video_pipeline_task(
     self,
     video_id: str,
@@ -56,6 +56,7 @@ def generate_video_pipeline_task(
     title: str = "",
     voice: str = "zh-CN-YunxiNeural",
 ):
+    logger.info(f"Starting pipeline for video_id={video_id}, prompt={prompt[:50]}...")
     """Run the full video generation pipeline sequentially.
 
     Stages: script → audio → subtitles → media → compose.
@@ -71,15 +72,21 @@ def generate_video_pipeline_task(
         Dict with video_id, status, file_path (if completed).
     """
     import asyncio
+    from asyncio import new_event_loop, set_event_loop
 
-    return asyncio.run(
-        _run_pipeline_async(
-            video_id=video_id,
-            prompt=prompt,
-            title=title,
-            voice=voice,
+    loop = new_event_loop()
+    set_event_loop(loop)
+    try:
+        return loop.run_until_complete(
+            _run_pipeline_async(
+                video_id=video_id,
+                prompt=prompt,
+                title=title,
+                voice=voice,
+            )
         )
-    )
+    finally:
+        loop.close()
 
 
 async def _run_pipeline_async(
@@ -134,8 +141,10 @@ async def _run_pipeline_async(
             generation_result = script_generator_service.generate(
                 prompt=prompt,
                 temperature=0.7,
-                max_tokens=2000,
+                max_tokens=4000,
+                provider="primary",
             )
+            logger.info(f"Script generation complete: {generation_result.get('title', 'Untitled')}")
 
             # Format script content
             content = _format_script_content(generation_result)
@@ -151,6 +160,8 @@ async def _run_pipeline_async(
                 "provider_used": generation_result.get("provider", ""),
             }
             await session.flush()
+            await session.commit()
+            logger.info(f"Script saved to DB: status={script.status}")
 
             stage_timings["script"] = round(time.perf_counter() - stage_start, 2)
             if stage_timings["script"] > STAGE_THRESHOLDS["script"]:
@@ -158,8 +169,11 @@ async def _run_pipeline_async(
 
             # ==================== Stage 2: TTS (Audio) ====================
             video.render_props = {"stage": "audio"}
+            video.status = "running"
             audio.status = "generating"
             await session.flush()
+            await session.commit()
+            logger.info("Starting TTS stage...")
 
             stage_start = time.perf_counter()
             tts_service = TTSService()
@@ -187,6 +201,8 @@ async def _run_pipeline_async(
             audio.status = "completed"
             audio.completed_at = datetime.now(timezone.utc)
             await session.flush()
+            await session.commit()
+            logger.info(f"Audio stage complete: {audio.file_path}")
 
             stage_timings["audio"] = round(time.perf_counter() - stage_start, 2)
             if stage_timings["audio"] > STAGE_THRESHOLDS["audio"]:
@@ -196,12 +212,16 @@ async def _run_pipeline_async(
             video.render_props = {"stage": "subtitles"}
             subtitle.status = "generating"
             await session.flush()
+            await session.commit()
+            logger.info("Starting subtitle stage...")
 
             stage_start = time.perf_counter()
             subtitle_service = SubtitleService()
-            word_timing = tts_result.get("word_timing", [])
-
+            word_timing = audio.word_timing if audio.word_timing else []
+            logger.info(f"Word timing data: {len(word_timing)} words")
+            
             if word_timing:
+                logger.info("Generating subtitles from word timing...")
                 sub_result = subtitle_service.generate(
                     word_timing=word_timing,
                     formats=["srt"],
@@ -221,11 +241,14 @@ async def _run_pipeline_async(
                 subtitle.status = "completed"
                 subtitle.completed_at = datetime.now(timezone.utc)
             else:
-                subtitle.content = ""
+                logger.warning("No word timing - skipping subtitle")
+                subtitle.content = "No timing"
                 subtitle.status = "completed"
                 subtitle.completed_at = datetime.now(timezone.utc)
 
             await session.flush()
+            await session.commit()
+            logger.info(f"Subtitle stage complete: status={subtitle.status}")
 
             stage_timings["subtitles"] = round(time.perf_counter() - stage_start, 2)
             if stage_timings["subtitles"] > STAGE_THRESHOLDS["subtitles"]:
@@ -234,6 +257,8 @@ async def _run_pipeline_async(
             # ==================== Stage 4: Media Matching (optional) ====================
             video.render_props = {"stage": "media"}
             await session.flush()
+            await session.commit()
+            logger.info("Starting media matching stage...")
 
             stage_start = time.perf_counter()
             image_paths: list[str] = []
@@ -286,11 +311,14 @@ async def _run_pipeline_async(
                     session.add(script_media)
 
                     pexels_client.close()
-            except Exception:
+            except Exception as e:
                 # Media matching is optional — degrade gracefully
+                logger.warning(f"Media matching failed: {e}")
                 image_paths = []
 
             await session.flush()
+            await session.commit()
+            logger.info(f"Media stage complete: {len(image_paths)} images")
 
             stage_timings["media"] = round(time.perf_counter() - stage_start, 2)
             if stage_timings["media"] > STAGE_THRESHOLDS["media"]:
@@ -300,6 +328,8 @@ async def _run_pipeline_async(
             video.render_props = {"stage": "compose"}
             video.status = "rendering"
             await session.flush()
+            await session.commit()
+            logger.info("Starting compose stage...")
 
             stage_start = time.perf_counter()
             compose_service = ComposeService(storage=storage)
@@ -327,6 +357,7 @@ async def _run_pipeline_async(
             video.completed_at = datetime.now(timezone.utc)
             video.render_props = {"stage": "completed", "timing": stage_timings}
             await session.flush()
+            await session.commit()
 
             return {
                 "video_id": video_id,
@@ -342,6 +373,7 @@ async def _run_pipeline_async(
             video.error = str(exc)
             video.render_props = {"stage": "failed", "timing": stage_timings}
             await session.flush()
+            await session.commit()
             return {
                 "video_id": video_id,
                 "status": "failed",
@@ -355,6 +387,7 @@ async def _run_pipeline_async(
             video.error = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
             video.render_props = {"stage": "failed", "timing": stage_timings}
             await session.flush()
+            await session.commit()
             return {
                 "video_id": video_id,
                 "status": "failed",

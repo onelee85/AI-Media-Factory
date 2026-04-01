@@ -3,7 +3,10 @@ import yaml
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+load_dotenv()
 
 
 def _resolve_env_var(value: str) -> str:
@@ -24,6 +27,8 @@ class RedisConfig(BaseSettings):
     port: int = 6379
     password: Optional[str] = None
     db: int = 0
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -58,6 +63,8 @@ class DatabaseConfig(BaseSettings):
     user: str = "postgres"
     password: str = "postgres"
     name: str = "ai_media_factory"
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -106,6 +113,13 @@ class ModelConfig(BaseSettings):
 
     _providers: dict = {}
 
+    def _resolve_env_var(self, value: str) -> str:
+        """Resolve ${ENV_VAR} pattern in config values."""
+        if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
+            env_var = value[2:-1]
+            return os.getenv(env_var, value)
+        return value
+
     def load_providers(self) -> dict:
         """Load provider configs from the YAML file, resolving ${ENV_VAR} patterns."""
         with open(self.models_config_path) as f:
@@ -115,12 +129,12 @@ class ModelConfig(BaseSettings):
         for name, cfg in config.get("providers", {}).items():
             api_key = cfg.get("api_key", "")
             if api_key.startswith("${") and api_key.endswith("}"):
-                env_var = api_key[2:-1]
-                api_key = os.getenv(env_var, "")
+                api_key = os.getenv(api_key[2:-1], "")
+
             providers[name] = ModelProviderConfig(
                 provider=cfg["provider"],
-                model=cfg["model"],
-                base_url=cfg["base_url"],
+                model=self._resolve_env_var(cfg["model"]),
+                base_url=self._resolve_env_var(cfg["base_url"]),
                 api_key=api_key if api_key else None,
                 timeout=cfg.get("timeout", 60),
             )

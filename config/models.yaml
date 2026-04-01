@@ -1,21 +1,22 @@
 # Model Provider Configuration
 # Primary and fallback providers for LLM calls
+# All values are resolved from environment variables in .env
 
 providers:
-  # Primary provider (LM Studio local inference)
+  # Primary provider (from .env)
   primary:
+    provider: "openai"
+    model: "${MODEL_NAME}"
+    base_url: "${OPENAI_API_BASE}"
+    api_key: "${OPENAI_API_KEY}"
+    timeout: 120
+
+  # Fallback provider (LM Studio local inference)
+  fallback:
     provider: "lm_studio"
     model: "lmstudio-community/Mistral-Nemo-Instruct-2407-GGUF"
     base_url: "http://localhost:1234/v1"
-    api_key: "not-needed"  # LM Studio doesn't require an API key
-    timeout: 120
-
-  # Fallback provider (OpenAI cloud)
-  fallback:
-    provider: "openai"
-    model: "gpt-4o-mini"
-    base_url: "https://api.openai.com/v1"
-    api_key: "${OPENAI_API_KEY}"  # Resolved from environment variable at runtime
+    api_key: "not-needed"
     timeout: 60
 
 # Default provider to use when none is specified
