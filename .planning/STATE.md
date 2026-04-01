@@ -8,21 +8,22 @@
 
 ## Current Position
 
-- **Phase**: 7 (complete)
-- **Plan**: 07-03 (all plans executed)
-- **Status**: Phase 7 complete — Pexels API client, keyword extraction, stock media matching pipeline, compose integration, 13 tests passing
-- **Progress**: ████████████████████░ 8/9 phases (7 complete, 1 ready)
+- **Phase**: 8 (complete)
+- **Plan**: 04 (verification — auto-approved)
+- **Status**: Phase 8 complete — Web Interface & REST API, 4 plans in 3 waves
+- **Progress**: ██████████████████████░ 9/9 phases (8 complete, 1 future)
 
 ## Performance Metrics
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Phases completed | 9 | 7 |
+| Phases completed | 9 | 8 |
 | Requirements mapped | 16/16 | 16/16 |
 | Video generation time | <5 min | — |
 | Script quality | >80% usable | — |
 | Subtitle sync accuracy | >95% | — |
 | User completion rate | >60% | — |
+| Tests passing | — | 110 |
 
 ## Accumulated Context
 
@@ -35,6 +36,9 @@
 | Celery+Redis async queue | Mature distributed queue, separate queues per pipeline stage | 2026-03-30 |
 | Pexels as primary stock API | Simpler, video support, good API | 2026-03-30 |
 | 9 phases, fine granularity | Matches natural build sequence along critical path | 2026-03-30 |
+| Single pipeline task (not chain) | Simpler debugging, reliable stage tracking via render_props | 2026-04-01 |
+| Vanilla HTML/CSS/JS for web UI | Zero dependencies, fast load, simple deployment | 2026-04-01 |
+| Polling over SSE for frontend | Simpler frontend, adequate for 2s update frequency | 2026-04-01 |
 
 ### Risks to Monitor
 | Risk | Mitigation |
@@ -52,12 +56,13 @@
 - [x] Execute Phase 5 — all 3 plans ✓
 - [x] Execute Phase 6 — all 4 plans ✓
 - [x] Execute Phase 7 — all 3 plans ✓
+- [x] Execute Phase 8 — all 4 plans ✓
 
 ## Session Continuity
 
-**Last session**: Phase 7 execution complete (2026-04-01)
-**Next action**: `/gsd-execute-phase 8` — Execute Phase 8 (Web Interface & REST API)
-**Context**: Phase 7 delivered: PexelsClient (search/download via httpx), KeywordExtractor (English/Chinese), StockMediaService (orchestration), ScriptMedia model (status tracking + JSONB results), match_media_task (async Celery on media queue), compose pipeline integration (loads matched images, graceful degradation), 13 passing tests for keyword extraction.
+**Last session**: Phase 8 execution complete (2026-04-01)
+**Next action**: v1 MVP complete — all 8 phases done. Manual testing of web UI at http://localhost:8000/
+**Context**: Phase 8 delivered: REST API (6 endpoints: generate, get, status, download, list, SSE stream), OrchestratorService (pipeline lifecycle), full pipeline Celery task (5 stages: script→audio→subtitles→media→compose), TTS task wrapper, single-page web UI (dark theme, progress stepper, video preview, download), 20 API tests (110 total passing). Web UI accessible at /web/ with root redirect.
 
 ---
 
