@@ -10,6 +10,7 @@ from pathlib import Path
 from app.celery_app import celery_app
 from app.db import async_session
 from app.models.audio import AudioFile
+from app.models.script_media import ScriptMedia
 from app.models.subtitle import Subtitle
 from app.models.video import Video
 from app.services.compose_service import ComposeService, ComposeServiceError
@@ -94,6 +95,29 @@ async def _compose_video_async(
         if not subtitle.content:
             return {"error": "Subtitle has no content"}
 
+        # Load matched images from ScriptMedia (Phase 7 integration)
+        image_paths: list[str] = []
+        try:
+            result = await session.execute(
+                select(ScriptMedia)
+                .where(
+                    ScriptMedia.script_id == audio.script_id,
+                    ScriptMedia.status == "completed",
+                )
+                .order_by(ScriptMedia.created_at.desc())
+                .limit(1)
+            )
+            script_media = result.scalar_one_or_none()
+            if script_media and script_media.matched_images:
+                for section_entry in script_media.matched_images:
+                    for img_path in section_entry.get("image_paths", []):
+                        # Verify file exists before adding
+                        if Path(img_path).exists():
+                            image_paths.append(img_path)
+        except Exception:
+            # ScriptMedia table may not exist yet — degrade gracefully
+            image_paths = []
+
         # Create Video record
         video = Video(
             script_id=audio.script_id,
@@ -122,6 +146,7 @@ async def _compose_video_async(
                 subtitle_content=subtitle.content,
                 output_path=output_path,
                 title=title,
+                images=image_paths if image_paths else None,
             )
 
             # Get file size
