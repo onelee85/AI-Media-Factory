@@ -1,0 +1,2 @@
+# Benchmark requirements — standalone script, uses project imports
+# No additional dependencies required beyond the main project

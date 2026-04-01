@@ -6,6 +6,7 @@ script generation → TTS → subtitles → media matching → compose.
 Each stage updates the Video record's render_props with current stage
 for real-time progress tracking via the REST API.
 """
+import time
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
@@ -107,6 +108,9 @@ async def _run_pipeline_async(
             await session.flush()
             return {"error": "Missing related records"}
 
+        stage_timings: dict[str, float] = {}
+        pipeline_start = time.perf_counter()
+
         try:
             # ==================== Stage 1: Script Generation ====================
             video.status = "running"
@@ -114,6 +118,7 @@ async def _run_pipeline_async(
             script.status = "generating"
             await session.flush()
 
+            stage_start = time.perf_counter()
             generation_result = script_generator_service.generate(
                 prompt=prompt,
                 temperature=0.7,
@@ -135,11 +140,14 @@ async def _run_pipeline_async(
             }
             await session.flush()
 
+            stage_timings["script"] = round(time.perf_counter() - stage_start, 2)
+
             # ==================== Stage 2: TTS (Audio) ====================
             video.render_props = {"stage": "audio"}
             audio.status = "generating"
             await session.flush()
 
+            stage_start = time.perf_counter()
             tts_service = TTSService()
             audio_dir = storage.audio_dir(str(script.id))
             audio_path = audio_dir / f"{audio.id}.mp3"
@@ -166,11 +174,14 @@ async def _run_pipeline_async(
             audio.completed_at = datetime.now(timezone.utc)
             await session.flush()
 
+            stage_timings["audio"] = round(time.perf_counter() - stage_start, 2)
+
             # ==================== Stage 3: Subtitles ====================
             video.render_props = {"stage": "subtitles"}
             subtitle.status = "generating"
             await session.flush()
 
+            stage_start = time.perf_counter()
             subtitle_service = SubtitleService()
             word_timing = tts_result.get("word_timing", [])
 
@@ -200,10 +211,13 @@ async def _run_pipeline_async(
 
             await session.flush()
 
+            stage_timings["subtitles"] = round(time.perf_counter() - stage_start, 2)
+
             # ==================== Stage 4: Media Matching (optional) ====================
             video.render_props = {"stage": "media"}
             await session.flush()
 
+            stage_start = time.perf_counter()
             image_paths: list[str] = []
             try:
                 # Try to match media if Pexels API key is available
@@ -260,11 +274,14 @@ async def _run_pipeline_async(
 
             await session.flush()
 
+            stage_timings["media"] = round(time.perf_counter() - stage_start, 2)
+
             # ==================== Stage 5: Compose ====================
             video.render_props = {"stage": "compose"}
             video.status = "rendering"
             await session.flush()
 
+            stage_start = time.perf_counter()
             compose_service = ComposeService(storage=storage)
             render_dir = storage.render_dir(str(script.id))
             output_path = render_dir / f"{video_id}.mp4"
@@ -278,13 +295,15 @@ async def _run_pipeline_async(
             )
 
             # ==================== Done ====================
+            stage_timings["compose"] = round(time.perf_counter() - stage_start, 2)
+            stage_timings["total"] = round(time.perf_counter() - pipeline_start, 2)
             file_size = output_path.stat().st_size if output_path.exists() else 0
 
             video.status = "completed"
             video.file_path = str(output_path)
             video.file_size_bytes = file_size
             video.completed_at = datetime.now(timezone.utc)
-            video.render_props = {"stage": "completed"}
+            video.render_props = {"stage": "completed", "timing": stage_timings}
             await session.flush()
 
             return {
@@ -292,28 +311,33 @@ async def _run_pipeline_async(
                 "status": "completed",
                 "file_path": str(output_path),
                 "file_size_bytes": file_size,
+                "timing": stage_timings,
             }
 
         except (TTSServiceError, ComposeServiceError) as exc:
+            stage_timings["total"] = round(time.perf_counter() - pipeline_start, 2)
             video.status = "failed"
             video.error = str(exc)
-            video.render_props = {"stage": "failed"}
+            video.render_props = {"stage": "failed", "timing": stage_timings}
             await session.flush()
             return {
                 "video_id": video_id,
                 "status": "failed",
                 "error": str(exc),
+                "timing": stage_timings,
             }
 
         except Exception as exc:
+            stage_timings["total"] = round(time.perf_counter() - pipeline_start, 2)
             video.status = "failed"
             video.error = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
-            video.render_props = {"stage": "failed"}
+            video.render_props = {"stage": "failed", "timing": stage_timings}
             await session.flush()
             return {
                 "video_id": video_id,
                 "status": "failed",
                 "error": str(exc),
+                "timing": stage_timings,
             }
 
 
