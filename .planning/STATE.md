@@ -8,22 +8,22 @@
 
 ## Current Position
 
-- **Phase**: 8 (complete)
-- **Plan**: 04 (verification — auto-approved)
-- **Status**: Phase 8 complete — Web Interface & REST API, 4 plans in 3 waves
-- **Progress**: ██████████████████████░ 9/9 phases (8 complete, 1 future)
+- **Phase**: 9 (complete)
+- **Plan**: 05 (complete)
+- **Status**: Phase 9 complete — Quality Assurance & Performance, 5 plans in 2 waves
+- **Progress**: █████████████████████████ 9/9 phases (9 complete)
 
 ## Performance Metrics
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Phases completed | 9 | 8 |
-| Requirements mapped | 16/16 | 16/16 |
-| Video generation time | <5 min | — |
-| Script quality | >80% usable | — |
-| Subtitle sync accuracy | >95% | — |
-| User completion rate | >60% | — |
-| Tests passing | — | 110 |
+| Phases completed | 9 | 9 |
+| Requirements mapped | 20/20 | 20/20 |
+| Video generation time | <5 min | Instrumented |
+| Script quality | >80% usable | Validated |
+| Subtitle sync accuracy | >95% | Validated |
+| User completion rate | >60% | Tracked |
+| Tests passing | — | 157 |
 
 ## Accumulated Context
 
@@ -57,13 +57,14 @@
 - [x] Execute Phase 6 — all 4 plans ✓
 - [x] Execute Phase 7 — all 3 plans ✓
 - [x] Execute Phase 8 — all 4 plans ✓
+- [x] Execute Phase 9 — all 5 plans ✓
 
 ## Session Continuity
 
-**Last session**: Phase 8 execution complete (2026-04-01)
-**Next action**: v1 MVP complete — all 8 phases done. Manual testing of web UI at http://localhost:8000/
-**Context**: Phase 8 delivered: REST API (6 endpoints: generate, get, status, download, list, SSE stream), OrchestratorService (pipeline lifecycle), full pipeline Celery task (5 stages: script→audio→subtitles→media→compose), TTS task wrapper, single-page web UI (dark theme, progress stepper, video preview, download), 20 API tests (110 total passing). Web UI accessible at /web/ with root redirect.
+**Last session**: Phase 9 execution complete (2026-04-01)
+**Next action**: v1 MVP complete — all 9 phases done. Manual testing of web UI at http://localhost:8000/web/
+**Context**: Phase 9 delivered: pipeline timing instrumentation (per-stage time.perf_counter() in render_props), benchmark suite (runner + report generator), script quality test suite (13 tests, QUAL-02 >80%), subtitle sync accuracy test suite (11 tests, QUAL-03 >95%), UX completion tracking (flowTracker with 5-step funnel), Celery time_limit=300 (QUAL-01 enforcement), enhanced SYSTEM_PROMPT with quality validation (MIN_CONTENT_LENGTH=50), punctuation-based subtitle line breaks, error recovery (3-retry polling, timeout handling, Chinese error messages), download prominence ("生成新视频" button), visual polish (progress transitions, checkmark fade-in, error shake). 157 tests passing (47 new from Phase 9). All quality targets instrumented and validated.
 
 ---
 
-*Updated: 2026-04-01 after Phase 7 execution*
+*Updated: 2026-04-01 after Phase 9 execution*

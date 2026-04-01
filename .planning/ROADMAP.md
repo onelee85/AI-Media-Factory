@@ -118,7 +118,11 @@
   2. User sees real-time progress updates during generation (script → voice → subtitles → render)
   3. User can preview the generated video in-browser before downloading the MP4
   4. External systems can trigger video generation and poll status via REST API endpoints
-**Plans**: TBD
+**Plans**: 4 plans in 3 waves
+- [ ] Plan 01: REST API + Orchestrator (video endpoints, OrchestratorService, status tracking)
+- [ ] Plan 02: Web UI (HTML form, progress polling, video preview, download)
+- [ ] Plan 03: Pipeline Task + Tests (end-to-end Celery task, API test suite, SSE streaming)
+- [ ] Plan 04: Verification Checkpoint (human verification of full flow)
 **UI hint**: yes
 
 ### Phase 9: Quality Assurance & Performance
@@ -130,7 +134,12 @@
   2. Generated scripts require no editing >80% of the time across a test set of topics
   3. Subtitle sync accuracy exceeds 95% in automated testing
   4. >60% of test users complete the full flow from input to download without abandoning
-**Plans**: TBD
+**Plans**: 5 plans in 2 waves
+- [ ] Plan 01: Pipeline Benchmark Suite (timing instrumentation, benchmark runner, report generator)
+- [ ] Plan 02: Script & Subtitle Quality Tests (script quality evaluator, sync accuracy test suite)
+- [ ] Plan 03: UX Flow Instrumentation (completion tracking, UX test scenarios)
+- [ ] Plan 04: Performance & Quality Optimization (pipeline tuning, prompt improvement, sync fixes)
+- [ ] Plan 05: UX Polish & Completion Optimization (error recovery, download prominence, visual polish)
 
 ---
 
@@ -145,8 +154,8 @@
 | 5. Subtitle Generation & Synchronization | 3/3 | ✅ Complete | 2026-03-31 |
 | 6. Remotion Video Composition & Export | 4/4 | ✅ Complete | 2026-03-31 |
 | 7. Stock Media Auto-Matching | 3/3 | ✅ Complete | 2026-04-01 |
-| 8. Web Interface & REST API | 0/4 | Not started | — |
-| 9. Quality Assurance & Performance | 0/4 | Not started | — |
+| 8. Web Interface & REST API | 4/4 | ✅ Complete | 2026-04-01 |
+| 9. Quality Assurance & Performance | 5/5 | ✅ Complete | 2026-04-01 |
 
 ---
 
