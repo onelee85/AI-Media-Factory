@@ -104,7 +104,10 @@
   1. System extracts keywords from each script section and searches Pexels API for matching images
   2. Downloaded images are integrated into the Remotion composition as background visuals
   3. At least 1 relevant image is matched per script section (>70% relevance)
-**Plans**: TBD
+**Plans**: 3 plans in 3 waves
+- [x] Plan 01: Pexels Media Service (PexelsClient, KeywordExtractor, StockMediaService)
+- [x] Plan 02: Media Matching Pipeline (ScriptMedia model, match_media_task Celery task)
+- [x] Plan 03: Compose Integration + Tests (wire images into compose_video_task, test suite)
 
 ### Phase 8: Web Interface & REST API
 **Goal**: Users can generate videos through a web UI or trigger generation via API
@@ -140,8 +143,8 @@
 | 3. AI Script Generation | 2/2 | ✅ Complete | 2026-03-31 |
 | 4. Text-to-Speech & Audio Timing | 2/2 | ✅ Complete | 2026-03-31 |
 | 5. Subtitle Generation & Synchronization | 3/3 | ✅ Complete | 2026-03-31 |
-| 6. Remotion Video Composition & Export | 0/4 | Plans ready | — |
-| 7. Stock Media Auto-Matching | 0/3 | Not started | — |
+| 6. Remotion Video Composition & Export | 4/4 | ✅ Complete | 2026-03-31 |
+| 7. Stock Media Auto-Matching | 3/3 | ✅ Complete | 2026-04-01 |
 | 8. Web Interface & REST API | 0/4 | Not started | — |
 | 9. Quality Assurance & Performance | 0/4 | Not started | — |
 
