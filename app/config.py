@@ -149,6 +149,7 @@ class Settings(BaseSettings):
     celery_queues: tuple = ("tts", "media", "render", "compose", "scripts")
     open_api_base: str = ""
     open_api_key: str = ""
+    pexels_api_key: str = ""
 
     redis: RedisConfig = RedisConfig()
     database: DatabaseConfig = DatabaseConfig()
