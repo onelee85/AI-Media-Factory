@@ -6,6 +6,7 @@ script generation → TTS → subtitles → media matching → compose.
 Each stage updates the Video record's render_props with current stage
 for real-time progress tracking via the REST API.
 """
+import logging
 import time
 import traceback
 from datetime import datetime, timezone
@@ -25,6 +26,17 @@ from app.services.tts_service import TTSService, TTSServiceError
 from app.storage import StorageService
 from sqlalchemy import select
 
+logger = logging.getLogger(__name__)
+
+# Stage timing thresholds in seconds — warn if exceeded
+STAGE_THRESHOLDS = {
+    "script": 30,
+    "audio": 60,
+    "subtitles": 5,
+    "media": 30,
+    "compose": 120,
+}
+
 
 def _update_stage_sync(video_id: str, stage: str, session):
     """Update Video.render_props with current pipeline stage."""
@@ -36,7 +48,7 @@ def _update_stage_sync(video_id: str, stage: str, session):
         video.render_props = props
 
 
-@celery_app.task(bind=True, name="app.tasks.pipeline.generate_video", acks_late=True)
+@celery_app.task(bind=True, name="app.tasks.pipeline.generate_video", acks_late=True, time_limit=300, soft_time_limit=280)
 def generate_video_pipeline_task(
     self,
     video_id: str,
@@ -141,6 +153,8 @@ async def _run_pipeline_async(
             await session.flush()
 
             stage_timings["script"] = round(time.perf_counter() - stage_start, 2)
+            if stage_timings["script"] > STAGE_THRESHOLDS["script"]:
+                logger.warning("Script stage took %ss (threshold: %ss)", stage_timings["script"], STAGE_THRESHOLDS["script"])
 
             # ==================== Stage 2: TTS (Audio) ====================
             video.render_props = {"stage": "audio"}
@@ -175,6 +189,8 @@ async def _run_pipeline_async(
             await session.flush()
 
             stage_timings["audio"] = round(time.perf_counter() - stage_start, 2)
+            if stage_timings["audio"] > STAGE_THRESHOLDS["audio"]:
+                logger.warning("Audio stage took %ss (threshold: %ss)", stage_timings["audio"], STAGE_THRESHOLDS["audio"])
 
             # ==================== Stage 3: Subtitles ====================
             video.render_props = {"stage": "subtitles"}
@@ -212,6 +228,8 @@ async def _run_pipeline_async(
             await session.flush()
 
             stage_timings["subtitles"] = round(time.perf_counter() - stage_start, 2)
+            if stage_timings["subtitles"] > STAGE_THRESHOLDS["subtitles"]:
+                logger.warning("Subtitles stage took %ss (threshold: %ss)", stage_timings["subtitles"], STAGE_THRESHOLDS["subtitles"])
 
             # ==================== Stage 4: Media Matching (optional) ====================
             video.render_props = {"stage": "media"}
@@ -275,6 +293,8 @@ async def _run_pipeline_async(
             await session.flush()
 
             stage_timings["media"] = round(time.perf_counter() - stage_start, 2)
+            if stage_timings["media"] > STAGE_THRESHOLDS["media"]:
+                logger.warning("Media stage took %ss (threshold: %ss)", stage_timings["media"], STAGE_THRESHOLDS["media"])
 
             # ==================== Stage 5: Compose ====================
             video.render_props = {"stage": "compose"}
@@ -296,6 +316,8 @@ async def _run_pipeline_async(
 
             # ==================== Done ====================
             stage_timings["compose"] = round(time.perf_counter() - stage_start, 2)
+            if stage_timings["compose"] > STAGE_THRESHOLDS["compose"]:
+                logger.warning("Compose stage took %ss (threshold: %ss)", stage_timings["compose"], STAGE_THRESHOLDS["compose"])
             stage_timings["total"] = round(time.perf_counter() - pipeline_start, 2)
             file_size = output_path.stat().st_size if output_path.exists() else 0
 

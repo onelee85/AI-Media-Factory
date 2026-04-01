@@ -59,6 +59,10 @@ class SubtitleService:
                 if gap > self.LINE_BREAK_GAP_SECONDS:
                     should_break = True
 
+            # 4. Natural break on punctuation (。！？.!?)
+            if word_text and word_text[-1] in '。！？.!?':
+                should_break = True
+
             if should_break and current_words:
                 # Finalize current line
                 lines.append({

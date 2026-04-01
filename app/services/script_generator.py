@@ -9,10 +9,19 @@ with clear sections. Output valid JSON with this schema:
 {
   "title": "Script title",
   "sections": [
-    {"heading": "Section name", "content": "Narration text", "duration_estimate_sec": 30}
+    {"heading": "Section name", "content": "Narration text for voice-over, minimum 50 characters per section", "duration_estimate_sec": 30}
   ],
   "summary": "One-sentence summary of the script"
 }
+
+Quality requirements:
+- Generate 3-5 sections per script
+- Each section's content must be at least 50 characters of natural narration text
+- Content should flow as spoken narration, not bullet points or lists
+- Duration estimates should reflect realistic speaking pace (~150 words/minute for Chinese, ~130 for English)
+- Title should be concise and descriptive (5-15 words)
+- Summary should capture the video's core message in one sentence
+
 Only output the JSON object, no extra text."""
 
 
@@ -21,6 +30,8 @@ class ScriptGeneratorService:
     Generates video scripts using LLM providers.
     Wraps ModelProviderService with script-specific prompts and parsing.
     """
+
+    MIN_CONTENT_LENGTH = 50  # Minimum characters per section for quality narration
 
     def __init__(self):
         self.provider = model_provider_service
@@ -111,6 +122,18 @@ class ScriptGeneratorService:
                 raise ValueError("Script JSON must be an object")
             if "sections" not in data or not isinstance(data.get("sections"), list):
                 raise ValueError("Script JSON must contain a 'sections' array")
+            if len(data["sections"]) < 2:
+                raise ValueError("Script must have at least 2 sections")
+
+            # Validate section content quality
+            for i, section in enumerate(data["sections"]):
+                content = section.get("content", "")
+                if len(content) < ScriptGeneratorService.MIN_CONTENT_LENGTH:
+                    raise ValueError(
+                        f"Section {i} content too short ({len(content)} < "
+                        f"{ScriptGeneratorService.MIN_CONTENT_LENGTH} chars)"
+                    )
+
             data.setdefault("title", "Untitled Script")
             data.setdefault("summary", "")
             return data

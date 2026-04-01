@@ -304,14 +304,14 @@ class TestScriptQualityIntegration:
     def test_parse_script_valid_json(self):
         """_parse_script handles valid JSON correctly."""
         from app.services.script_generator import ScriptGeneratorService
-        raw = '{"title": "Test", "sections": [{"heading": "A", "content": "Content here for testing.", "duration_estimate_sec": 30}], "summary": "Summary"}'
+        raw = '{"title": "Test", "sections": [{"heading": "A", "content": "Section A has enough content for quality validation to pass."}, {"heading": "B", "content": "Section B also has enough content for quality validation to pass."}], "summary": "Summary"}'
         result = ScriptGeneratorService._parse_script(raw)
         assert result["title"] == "Test"
-        assert len(result["sections"]) == 1
+        assert len(result["sections"]) == 2
 
     def test_parse_script_with_markdown_fence(self):
         """_parse_script strips markdown code fences."""
         from app.services.script_generator import ScriptGeneratorService
-        raw = '```json\n{"title": "Test", "sections": [{"heading": "A", "content": "Content here.", "duration_estimate_sec": 30}], "summary": "S"}\n```'
+        raw = '```json\n{"title": "Test", "sections": [{"heading": "A", "content": "Section A has enough content for quality validation to pass."}, {"heading": "B", "content": "Section B also has enough content for quality validation to pass."}], "summary": "S"}\n```'
         result = ScriptGeneratorService._parse_script(raw)
         assert result["title"] == "Test"
