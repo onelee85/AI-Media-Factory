@@ -108,5 +108,14 @@
     </div>
 
     <script src="app.js"></script>
+    <!-- Debug panel (visible with ?debug=1) -->
+    <div id="debug-panel" style="display:none;position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.85);color:#0f0;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;z-index:9999;min-width:200px;border:1px solid #333;">
+        Flow Debug Loading...
+    </div>
+    <script>
+        if (new URLSearchParams(location.search).has('debug')) {
+            document.getElementById('debug-panel').style.display = 'block';
+        }
+    </script>
 </body>
 </html>

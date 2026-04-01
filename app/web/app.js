@@ -7,6 +7,46 @@
 (function () {
     "use strict";
 
+    // --- Flow Completion Tracker ---
+    const flowTracker = {
+        steps: { input: false, submit: false, progress: false, preview: false, download: false },
+        startTime: null,
+        mark(step) {
+            if (this.steps[step]) return; // Already marked
+            this.steps[step] = true;
+            if (!this.startTime) this.startTime = Date.now();
+            console.log(`[Flow] Step completed: ${step}`, this.completionSummary());
+            this._updateDebugPanel();
+        },
+        completionSummary() {
+            const completed = Object.values(this.steps).filter(Boolean).length;
+            const total = Object.keys(this.steps).length;
+            return { completed, total, rate: Math.round((completed / total) * 100), steps: { ...this.steps } };
+        },
+        getDropOff() {
+            return Object.entries(this.steps).filter(([_, v]) => !v).map(([k]) => k);
+        },
+        getElapsed() {
+            if (!this.startTime) return 0;
+            return Math.round((Date.now() - this.startTime) / 1000);
+        },
+        _updateDebugPanel() {
+            const panel = document.getElementById("debug-panel");
+            if (!panel) return;
+            const summary = this.completionSummary();
+            const dropOff = this.getDropOff();
+            const elapsed = this.getElapsed();
+            panel.innerHTML = `
+                <strong>Flow Debug</strong><br>
+                Steps: ${summary.completed}/${summary.total} (${summary.rate}%)<br>
+                Elapsed: ${elapsed}s<br>
+                Drop-off: ${dropOff.length > 0 ? dropOff.join(", ") : "none"}<br>
+                ${Object.entries(this.steps).map(([k, v]) => `${v ? "✓" : "○"} ${k}`).join("<br>")}
+            `;
+        }
+    };
+    window.flowTracker = flowTracker;
+
     // --- DOM references ---
     const $prompt = document.getElementById("prompt");
     const $title = document.getElementById("title");
@@ -47,9 +87,12 @@
 
     const STAGE_ORDER = ["script", "audio", "subtitles", "media", "compose"];
 
-    // --- Character counter ---
+    // --- Character counter + input tracking ---
     $prompt.addEventListener("input", function () {
         $charCount.textContent = this.value.length;
+        if (this.value.trim().length > 0) {
+            flowTracker.mark("input");
+        }
     });
 
     // --- Form submission ---
@@ -69,6 +112,7 @@
         // Clear previous state
         hideError();
         setLoading(true);
+        flowTracker.mark("submit");
 
         try {
             const response = await fetch("/api/videos/generate", {
@@ -113,6 +157,7 @@
 
                 const data = await response.json();
                 updateProgress(data.stage, data.error);
+                flowTracker.mark("progress");
 
                 if (data.stage === "completed") {
                     stopPolling();
@@ -215,10 +260,14 @@
             // Show sections
             $previewSection.hidden = false;
             $downloadSection.hidden = false;
+            flowTracker.mark("preview");
 
             // Set download link
             $downloadBtn.href = `/api/videos/${videoId}/download`;
             $downloadBtn.textContent = "Download MP4";
+            $downloadBtn.addEventListener("click", function () {
+                flowTracker.mark("download");
+            });
 
             // Scroll to preview
             $previewSection.scrollIntoView({ behavior: "smooth", block: "start" });
